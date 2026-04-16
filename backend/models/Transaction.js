@@ -1,36 +1,27 @@
-const mongoose = require('mongoose');
+const { pool } = require('../config/db');
 
-const transactionSchema = new mongoose.Schema(
-  {
-    title: {
-      type: String,
-      required: true,
-    },
-    amount: {
-      type: Number,
-      required: true,
-    },
-    type: {
-      type: String,
-      required: true,
-    },
-    status: {
-      type: String,
-      default: 'pending',
-    },
-    date: {
-      type: Date,
-      default: Date.now,
-    },
-    user: {
-      type: mongoose.Schema.Types.ObjectId,
-      required: true,
-      ref: 'User',
-    },
-  },
-  {
-    timestamps: true,
-  }
-);
+const getTransactionsByUserId = async (userId) => {
+  const [rows] = await pool.query(
+    'SELECT id, title, amount, type, status, date, user_id, created_at, updated_at FROM transactions WHERE user_id = ? ORDER BY created_at DESC',
+    [userId]
+  );
+  return rows;
+};
 
-module.exports = mongoose.model('Transaction', transactionSchema);
+const createTransaction = async ({ title, amount, type, status = 'pending', user_id }) => {
+  const [result] = await pool.query(
+    'INSERT INTO transactions (title, amount, type, status, user_id) VALUES (?, ?, ?, ?, ?)',
+    [title, amount, type, status, user_id]
+  );
+
+  const [rows] = await pool.query(
+    'SELECT id, title, amount, type, status, date, user_id, created_at, updated_at FROM transactions WHERE id = ?',
+    [result.insertId]
+  );
+  return rows[0];
+};
+
+module.exports = {
+  getTransactionsByUserId,
+  createTransaction,
+};

@@ -6,6 +6,9 @@
 class DashboardManager {
     constructor() {
         this.data = null;
+        this.user = null;
+        this.stats = null;
+        this.transactions = null;
         this.isAnimating = false;
         this.stateChangeUnsubscribe = null;
         this.init();
@@ -17,6 +20,10 @@ class DashboardManager {
         this.setupEventListeners();
         this.subscribeToStateChanges();
         this.loadThemeIcons();
+
+        if (window.globalState?.mode === 'authenticated') {
+            this.loadAuthenticatedData();
+        }
     }
 
     generateData() {
@@ -38,15 +45,29 @@ class DashboardManager {
 
     renderKPIs() {
         const kpiElements = document.querySelectorAll('[data-kpi]');
+        const stats = window.globalState.mode === 'authenticated' ? this.stats : null;
+
         kpiElements.forEach(el => {
             const kpiType = el.getAttribute('data-kpi');
-            const value = this.data.kpis[kpiType];
-            
+            let value = this.data.kpis[kpiType];
+
+            if (stats) {
+                if (kpiType === 'users') {
+                    value = stats.usersCount;
+                } else if (kpiType === 'revenue') {
+                    value = stats.revenue;
+                } else if (kpiType === 'transactions') {
+                    value = stats.transactionCount;
+                } else if (kpiType === 'growth') {
+                    value = stats.growth;
+                }
+            }
+
             if (window.globalState.mode === 'authenticated') {
                 if (kpiType === 'growth') {
-                    el.textContent = typeof value === 'string' ? value : value.toFixed(1) + '%';
+                    el.textContent = typeof value === 'string' ? value : `${value.toFixed(1)}%`;
                 } else if (kpiType === 'revenue') {
-                    el.textContent = value.toLocaleString('fr-FR') + ' €';
+                    el.textContent = `${value.toLocaleString('fr-FR')} €`;
                 } else {
                     el.textContent = value.toLocaleString('fr-FR');
                 }
@@ -182,35 +203,46 @@ class DashboardManager {
         const tbody = document.getElementById('transactionsList');
         if (!tbody) return;
 
-        tbody.innerHTML = this.data.transactions.map(txn => {
+        const transactions = window.globalState.mode === 'authenticated' && Array.isArray(this.transactions)
+            ? this.transactions
+            : this.data.transactions;
+
+        tbody.innerHTML = transactions.map(txn => {
             const statusColor = {
                 'Complété': '#10b981',
                 'En attente': '#f59e0b',
-                'Échoué': '#ef4444'
+                'Échoué': '#ef4444',
+                'completed': '#10b981',
+                'pending': '#f59e0b',
+                'failed': '#ef4444'
             };
 
-            const amount = window.globalState.mode === 'preview' ? 'XXX' : txn.amount.toLocaleString('fr-FR');
+            const amount = window.globalState.mode === 'preview' ? 'XXX' : Number(txn.amount).toLocaleString('fr-FR');
+            const statusKey = txn.status || 'En attente';
+            const color = statusColor[statusKey] || '#6b7280';
+            const statusLabel = typeof txn.status === 'string' ? txn.status : 'En attente';
+            const userLabel = txn.user || txn.email || 'Utilisateur';
 
             return `
                 <tr>
                     <td style="font-weight: 600;">${txn.id}</td>
-                    <td>${txn.type}</td>
+                    <td>${txn.type || 'Paiement'}</td>
                     <td>${amount} €</td>
-                    <td>${txn.date}</td>
+                    <td>${txn.date || '-'}</td>
                     <td>
                         <span style="
                             display: inline-block;
                             padding: 0.4rem 0.8rem;
                             border-radius: var(--radius);
-                            background: ${statusColor[txn.status]}20;
-                            color: ${statusColor[txn.status]};
+                            background: ${color}20;
+                            color: ${color};
                             font-size: 0.85rem;
                             font-weight: 600;
                         ">
-                            ${txn.status}
+                            ${statusLabel}
                         </span>
                     </td>
-                    <td>${txn.user}</td>
+                    <td>${userLabel}</td>
                 </tr>
             `;
         }).join('');
@@ -250,6 +282,27 @@ class DashboardManager {
         } else {
             if (sunIcon) sunIcon.style.display = 'none';
             if (moonIcon) moonIcon.style.display = 'block';
+        }
+    }
+
+    async loadAuthenticatedData() {
+        try {
+            this.user = await auth.fetchCurrentUser();
+            this.stats = await auth.fetchDashboardStats();
+            const transactionPayload = await auth.fetchTransactions();
+            this.transactions = transactionPayload.data || [];
+
+            const avatarText = document.getElementById('avatarText');
+            if (avatarText && this.user?.name) {
+                avatarText.textContent = this.user.name.split(' ').map(part => part[0]).join('').substring(0, 2).toUpperCase();
+            }
+
+            this.render();
+        } catch (error) {
+            console.error('Unable to load authenticated dashboard data:', error);
+            if (typeof showToast === 'function') {
+                showToast(error.message || 'Impossible de charger les données du tableau de bord.', 'error');
+            }
         }
     }
 
@@ -340,38 +393,66 @@ function toggleAuthForm() {
     }
 }
 
-function handleSignIn(event) {
+async function handleSignIn(event) {
     event.preventDefault();
     const form = event.target;
-    const email = form.querySelector('input[type="email"]').value;
+    const email = form.querySelector('input[type="email"]').value.trim();
     const password = form.querySelector('input[type="password"]').value;
 
-    if (window.globalState) {
-        window.globalState.setAuthenticated(true);
+    if (!email || !password) {
+        showToast('Veuillez saisir votre email et votre mot de passe.', 'warning');
+        return;
+    }
+
+    try {
+        const user = await auth.authLogin(email, password);
+        auth.saveSession(user);
+        if (window.globalState) {
+            window.globalState.setAuthenticated(true);
+        }
         document.getElementById('authModalOverlay').hidden = true;
         showToast('Connecté avec succès!', 'success');
         form.reset();
+        if (window.dashboard) {
+            window.dashboard.loadAuthenticatedData?.();
+        }
+    } catch (error) {
+        showToast(error.message || 'Échec de la connexion. Vérifiez vos informations.', 'error');
     }
 }
 
-function handleSignUp(event) {
+async function handleSignUp(event) {
     event.preventDefault();
     const form = event.target;
-    const inputs = form.querySelectorAll('input');
-    const email = inputs[1].value;
-    const password = inputs[2].value;
-    const confirmPassword = inputs[3].value;
+    const name = form.querySelector('input[type="text"]').value.trim();
+    const email = form.querySelector('input[type="email"]').value.trim();
+    const password = form.querySelectorAll('input[type="password"]')[0].value;
+    const confirmPassword = form.querySelectorAll('input[type="password"]')[1].value;
+
+    if (!name || !email || !password || !confirmPassword) {
+        showToast('Veuillez remplir tous les champs.', 'warning');
+        return;
+    }
 
     if (password !== confirmPassword) {
         showToast('Les mots de passe ne correspondent pas', 'error');
         return;
     }
 
-    if (window.globalState) {
-        window.globalState.setAuthenticated(true);
+    try {
+        const user = await auth.authRegister(name, email, password);
+        auth.saveSession(user);
+        if (window.globalState) {
+            window.globalState.setAuthenticated(true);
+        }
         document.getElementById('authModalOverlay').hidden = true;
         showToast('Compte créé avec succès!', 'success');
         form.reset();
+        if (window.dashboard) {
+            window.dashboard.loadAuthenticatedData?.();
+        }
+    } catch (error) {
+        showToast(error.message || 'Échec de l’inscription. Réessayez.', 'error');
     }
 }
 

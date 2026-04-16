@@ -152,7 +152,6 @@
         const confirmPasswordError = document.getElementById('confirmPasswordError');
         const generalError = document.getElementById('generalError');
 
-        // Password visibility toggles
         passwordToggle.addEventListener('click', (e) => {
             e.preventDefault();
             const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
@@ -169,11 +168,9 @@
             confirmPasswordToggle.classList.toggle('active');
         });
 
-        // Form submission
-        signUpForm.addEventListener('submit', (e) => {
+        signUpForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            // Clear previous errors
             fullNameError.textContent = '';
             emailError.textContent = '';
             passwordError.textContent = '';
@@ -184,8 +181,6 @@
             const email = emailInput.value.trim();
             const password = passwordInput.value;
             const confirmPassword = confirmPasswordInput.value;
-
-            // Validation
             let isValid = true;
 
             if (!fullName) {
@@ -222,50 +217,17 @@
 
             if (!isValid) return;
 
-            // Register new user
-            registerUser(fullName, email, password);
+            try {
+                const user = await auth.authRegister(fullName, email, password);
+                auth.saveSession(user);
+                window.location.href = 'index.html';
+            } catch (error) {
+                generalError.textContent = error.message || 'Impossible d\'enregistrer le compte';
+            }
         });
 
         function isValidEmail(email) {
             return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-        }
-
-        function registerUser(fullName, email, password) {
-            // Get existing users
-            const users = JSON.parse(localStorage.getItem('dashboard-users') || '[]');
-
-            // Check if email already exists
-            if (users.find(u => u.email === email)) {
-                generalError.textContent = 'Cet email est déjà utilisé';
-                return;
-            }
-
-            // Create new user
-            const newUser = {
-                id: 'user_' + Date.now(),
-                name: fullName,
-                email: email,
-                password: password, // In production, this should be hashed!
-                role: 'user',
-                createdAt: new Date().toISOString()
-            };
-
-            users.push(newUser);
-            localStorage.setItem('dashboard-users', JSON.stringify(users));
-
-            // Create session for new user
-            const session = {
-                userId: newUser.id,
-                email: newUser.email,
-                name: newUser.name,
-                role: newUser.role,
-                loginTime: new Date().toISOString()
-            };
-
-            localStorage.setItem('dashboard-session', JSON.stringify(session));
-
-            // Redirect to dashboard
-            window.location.href = 'index.html';
         }
     </script>
 </body>

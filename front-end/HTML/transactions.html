@@ -263,6 +263,7 @@
         </div>
     </div>
 
+    <script src="../SCRIPTS/auth.js"></script>
     <script>
         // Update theme icons visibility
         function updateThemeIcons() {
@@ -360,6 +361,41 @@
         
         document.addEventListener('DOMContentLoaded', animateNumbers);
         animateNumbers();
+
+        async function renderTransactionsTable() {
+            const tbody = document.querySelector('table tbody');
+            if (!tbody) return;
+
+            try {
+                const transactions = await auth.fetchTransactions();
+                if (!transactions || transactions.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center">Aucune transaction trouvée.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = transactions.map(tx => {
+                    const dateValue = tx.date ? new Date(tx.date).toLocaleDateString('fr-FR') : new Date(tx.created_at).toLocaleDateString('fr-FR');
+                    const statusLabel = tx.status === 'success' ? 'Réussie' : tx.status === 'failed' ? 'Échouée' : 'En attente';
+                    const statusClass = tx.status === 'success' ? 'badge--success' : tx.status === 'failed' ? 'badge--danger' : 'badge--warning';
+
+                    return `
+                        <tr>
+                            <td>${tx.id}</td>
+                            <td>${tx.user_id || 'Moi'}</td>
+                            <td>€ ${Number(tx.amount).toFixed(2)}</td>
+                            <td><span class="badge ${statusClass}">${statusLabel}</span></td>
+                            <td>${dateValue}</td>
+                            <td><button class="btn btn--small" type="button">Détails</button></td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Unable to load transactions:', error);
+                tbody.innerHTML = '<tr><td colspan="6">Erreur lors du chargement des transactions.</td></tr>';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', renderTransactionsTable);
     </script>
 
     <script src="../SCRIPTS/modal-system.js"></script>

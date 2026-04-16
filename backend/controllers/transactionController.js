@@ -1,7 +1,7 @@
-const Transaction = require('../models/Transaction');
+const { getTransactionsByUserId, createTransaction: createTransactionRecord } = require('../models/Transaction');
 
 const getTransactions = async (req, res) => {
-  const transactions = await Transaction.find({ user: req.user._id }).sort('-createdAt');
+  const transactions = await getTransactionsByUserId(req.user.id);
   res.json(transactions);
 };
 
@@ -12,12 +12,12 @@ const createTransaction = async (req, res) => {
     return res.status(400).json({ message: 'Title, amount, and type are required.' });
   }
 
-  const transaction = await Transaction.create({
+  const transaction = await createTransactionRecord({
     title,
-    amount,
+    amount: Number(amount),
     type,
     status: status || 'pending',
-    user: req.user._id,
+    user_id: req.user.id,
   });
 
   res.status(201).json(transaction);

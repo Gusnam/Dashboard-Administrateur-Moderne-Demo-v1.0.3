@@ -323,6 +323,7 @@
         </div>
     </div>
 
+    <script src="../SCRIPTS/auth.js"></script>
     <script>
         // Update theme icons visibility
         function updateThemeIcons() {
@@ -420,6 +421,35 @@
         
         document.addEventListener('DOMContentLoaded', animateNumbers);
         animateNumbers();
+
+        async function renderUsersTable() {
+            const tbody = document.querySelector('table tbody');
+            if (!tbody) return;
+
+            try {
+                const users = await auth.fetchUsers();
+                if (!users || users.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center">Aucun utilisateur trouvé.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = users.map(user => `
+                    <tr>
+                        <td>${user.id}</td>
+                        <td>${user.name}</td>
+                        <td>${user.email}</td>
+                        <td>${user.role}</td>
+                        <td><span class="badge badge--success">Actif</span></td>
+                        <td><button class="btn btn--small" type="button">Modifier</button></td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Unable to load users:', error);
+                tbody.innerHTML = '<tr><td colspan="6">Erreur lors du chargement des utilisateurs.</td></tr>';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', renderUsersTable);
     </script>
 
     <script src="../SCRIPTS/modal-system.js"></script>

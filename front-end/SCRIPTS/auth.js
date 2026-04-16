@@ -1,76 +1,114 @@
-/* ---------------------------------------------------------------------------
-   Authentication Manager
-   --------------------------------------------------------------------------- */
+const API_BASE_URL = getApiBaseUrl();
 
-// Initialize demo users on first load
-function initializeDemoUsers() {
-    if (!localStorage.getItem('dashboard-users')) {
-        const demoUsers = [
-            {
-                id: 'user_1',
-                name: 'Admin User',
-                email: 'admin@example.com',
-                password: 'admin123',
-                role: 'admin',
-                createdAt: new Date().toISOString()
-            },
-            {
-                id: 'user_2',
-                name: 'Jean Dupont',
-                email: 'jean@example.com',
-                password: 'password123',
-                role: 'user',
-                createdAt: new Date().toISOString()
-            }
-        ];
-        localStorage.setItem('dashboard-users', JSON.stringify(demoUsers));
+function getApiBaseUrl() {
+    if (window.location.protocol.startsWith('http')) {
+        return `${window.location.protocol}//${window.location.host}`;
+    }
+    return 'http://localhost:5000';
+}
+
+function getStoredSession() {
+    try {
+        return JSON.parse(localStorage.getItem('dashboard-session') || 'null');
+    } catch {
+        return null;
     }
 }
 
-// Get current session
-function getCurrentSession() {
-    const session = localStorage.getItem('dashboard-session');
-    return session ? JSON.parse(session) : null;
+function getAuthToken() {
+    const session = getStoredSession();
+    return session?.token || null;
 }
 
-// Check if user is authenticated
-function isAuthenticated() {
-    return getCurrentSession() !== null;
+function saveSession(session) {
+    localStorage.setItem('dashboard-session', JSON.stringify(session));
 }
 
-// Logout user
-function logout() {
+function clearSession() {
     localStorage.removeItem('dashboard-session');
-    window.location.href = 'signin.html';
 }
 
-// Validate email format
-function isValidEmail(email) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+async function apiRequest(path, options = {}) {
+    const { method = 'GET', body, authenticated = false } = options;
+    const headers = { 'Content-Type': 'application/json' };
+
+    if (authenticated) {
+        const token = getAuthToken();
+        if (token) {
+            headers.Authorization = `Bearer ${token}`;
+        }
+    }
+
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined,
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        throw new Error(data.message || 'Une erreur est survenue.');
+    }
+    return data;
 }
 
-// Validate password strength
-function validatePasswordStrength(password) {
-    return {
-        length: password.length >= 6,
-        hasUpperCase: /[A-Z]/.test(password),
-        hasLowerCase: /[a-z]/.test(password),
-        hasNumbers: /\d/.test(password),
-        hasSpecialChar: /[!@#$%^&*]/.test(password)
-    };
+async function authLogin(email, password) {
+    return apiRequest('/api/auth/login', {
+        method: 'POST',
+        body: { email, password },
+    });
 }
 
-// Initialize demo users
-window.addEventListener('DOMContentLoaded', initializeDemoUsers);
-
-// Export for use in other scripts
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = {
-        getCurrentSession,
-        isAuthenticated,
-        logout,
-        isValidEmail,
-        validatePasswordStrength,
-        initializeDemoUsers
-    };
+async function authRegister(name, email, password) {
+    return apiRequest('/api/auth/register', {
+        method: 'POST',
+        body: { name, email, password },
+    });
 }
+
+async function authResetPassword(email, password) {
+    return apiRequest('/api/auth/reset-password', {
+        method: 'POST',
+        body: { email, password },
+    });
+}
+
+async function fetchCurrentUser() {
+    return apiRequest('/api/auth/me', { authenticated: true });
+}
+
+async function updateProfile(updates) {
+    return apiRequest('/api/users/profile', {
+        method: 'PUT',
+        authenticated: true,
+        body: updates,
+    });
+}
+
+async function fetchUsers() {
+    return apiRequest('/api/users', { authenticated: true });
+}
+
+async function fetchDashboardStats() {
+    return apiRequest('/api/stats', { authenticated: true });
+}
+
+async function fetchTransactions() {
+    return apiRequest('/api/transactions', { authenticated: true });
+}
+
+window.auth = {
+    getApiBaseUrl,
+    getStoredSession,
+    getAuthToken,
+    saveSession,
+    clearSession,
+    authLogin,
+    authRegister,
+    authResetPassword,
+    fetchCurrentUser,
+    updateProfile,
+    fetchUsers,
+    fetchDashboardStats,
+    fetchTransactions,
+};

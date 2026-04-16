@@ -141,7 +141,7 @@
                             <label for="admin-role">Rôle</label>
                             <input type="text" id="admin-role" placeholder="Rôle" class="preview-blur-input" />
                         </div>
-                        <button class="btn btn--primary">Sauvegarder</button>
+                        <button class="btn btn--primary" id="saveProfileBtn">Sauvegarder</button>
                     </div>
 
                     <div class="settings-group">
@@ -161,7 +161,7 @@
                                 <option>English</option>
                             </select>
                         </div>
-                        <button class="btn btn--primary">Appliquer</button>
+                        <button class="btn btn--primary" id="applyPreferencesBtn">Appliquer</button>
                     </div>
 
                     <div class="settings-group">
@@ -174,13 +174,14 @@
                             <label for="new-password">Nouveau mot de passe</label>
                             <input type="password" id="new-password" />
                         </div>
-                        <button class="btn btn--primary">Changer</button>
+                        <button class="btn btn--primary" id="changePasswordBtn">Changer</button>
                     </div>
                 </section>
             </main>
         </div>
     </div>
 
+    <script src="../SCRIPTS/auth.js"></script>
     <script>
         // Update theme icons visibility
         function updateThemeIcons() {
@@ -235,6 +236,87 @@
             if (!themeContainer.contains(event.target) && !themeMenu.hasAttribute('hidden')) {
                 themeMenu.setAttribute('hidden', '');
             }
+        });
+
+        async function loadProfile() {
+            try {
+                const user = await auth.fetchCurrentUser();
+                document.getElementById('admin-name').value = user.name || '';
+                document.getElementById('admin-email').value = user.email || '';
+                document.getElementById('admin-username').value = user.name || '';
+                document.getElementById('admin-role').value = user.role || 'Utilisateur';
+                document.getElementById('avatarText').textContent = user.name ? user.name.split(' ').map(part => part[0]).join('').substring(0, 2).toUpperCase() : 'AD';
+            } catch (error) {
+                console.error('Unable to load profile:', error);
+            }
+
+            const theme = localStorage.getItem('dashboard-theme') || 'light';
+            const language = localStorage.getItem('dashboard-language') || 'Français';
+            document.getElementById('theme').value = theme === 'dark' ? 'Sombre' : theme === 'system' ? 'Automatique' : 'Clair';
+            document.getElementById('language').value = language;
+
+            updateThemeIcons();
+        }
+
+        function applyPreferences() {
+            const themeValue = document.getElementById('theme').value;
+            const languageValue = document.getElementById('language').value;
+
+            if (themeValue === 'Clair') {
+                toggleTheme('light');
+            } else if (themeValue === 'Sombre') {
+                toggleTheme('dark');
+            } else {
+                toggleTheme('system');
+            }
+
+            localStorage.setItem('dashboard-language', languageValue);
+            showToast('Préférences mises à jour', 'success');
+        }
+
+        async function saveProfile() {
+            const name = document.getElementById('admin-name').value.trim();
+            const email = document.getElementById('admin-email').value.trim();
+            const currentPassword = document.getElementById('current-password').value;
+            const newPassword = document.getElementById('new-password').value;
+
+            if (!name || !email) {
+                showToast('Le nom et l\'email sont requis.', 'warning');
+                return;
+            }
+
+            const updates = { name, email };
+            if (newPassword) {
+                if (newPassword.length < 6) {
+                    showToast('Le nouveau mot de passe doit contenir au moins 6 caractères.', 'warning');
+                    return;
+                }
+                updates.password = newPassword;
+            }
+
+            try {
+                const updated = await auth.updateProfile(updates);
+                auth.saveSession({ ...auth.getStoredSession(), name: updated.name, email: updated.email, role: updated.role });
+                showToast('Profil mis à jour avec succès', 'success');
+            } catch (error) {
+                showToast(error.message || 'Impossible de mettre à jour le profil', 'error');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadProfile();
+            document.getElementById('saveProfileBtn')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                saveProfile();
+            });
+            document.getElementById('applyPreferencesBtn')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                applyPreferences();
+            });
+            document.getElementById('changePasswordBtn')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                saveProfile();
+            });
         });
     </script>
 

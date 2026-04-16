@@ -739,6 +739,41 @@
         }
     </script>
 
+    <script src="../SCRIPTS/auth.js"></script>
+    <script>
+        async function loadDashboardStats() {
+            const avatarText = document.getElementById('avatarText');
+            const profileSession = auth.getStoredSession();
+
+            if (avatarText && profileSession?.name) {
+                avatarText.textContent = profileSession.name.split(' ').map(part => part[0]).join('').substring(0, 2).toUpperCase();
+            }
+
+            try {
+                const stats = await auth.fetchDashboardStats();
+                document.querySelectorAll('.stats .card').forEach(card => {
+                    const title = card.querySelector('.card__title')?.textContent?.trim();
+                    const valueElement = card.querySelector('.card__value');
+                    if (!title || !valueElement) return;
+
+                    if (title === 'Utilisateurs') {
+                        valueElement.textContent = stats.totalUsers ?? 0;
+                    } else if (title === 'Ventes') {
+                        valueElement.textContent = `€ ${Number(stats.totalTransactionAmount || 0).toLocaleString('fr-FR')}`;
+                    } else if (title === 'Sessions') {
+                        valueElement.textContent = stats.totalTransactions ?? 0;
+                    } else if (title === 'Support') {
+                        valueElement.textContent = stats.pendingTransactions ?? 0;
+                    }
+                });
+            } catch (error) {
+                console.error('Unable to load dashboard stats:', error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadDashboardStats);
+    </script>
+
     <script src="../SCRIPTS/modal-system.js"></script>
     <script src="../SCRIPTS/preview-mode.js"></script>
     <script src="../SCRIPTS/app.js"></script>

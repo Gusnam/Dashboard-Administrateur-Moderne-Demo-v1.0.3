@@ -134,19 +134,16 @@
             passwordToggle.classList.toggle('active');
         });
 
-        // Form submission
-        signInForm.addEventListener('submit', (e) => {
+        // Handle sign in form submit
+        signInForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
-            // Clear previous errors
+
             emailError.textContent = '';
             passwordError.textContent = '';
             generalError.textContent = '';
 
             const email = emailInput.value.trim();
             const password = passwordInput.value;
-
-            // Validation
             let isValid = true;
 
             if (!email) {
@@ -167,51 +164,26 @@
 
             if (!isValid) return;
 
-            // Authenticate user
-            authenticateUser(email, password, rememberMe.checked);
+            try {
+                const user = await auth.authLogin(email, password);
+                auth.saveSession(user);
+
+                if (rememberMe.checked) {
+                    localStorage.setItem('dashboard-remember-email', email);
+                } else {
+                    localStorage.removeItem('dashboard-remember-email');
+                }
+
+                window.location.href = 'index.html';
+            } catch (error) {
+                generalError.textContent = error.message || 'Email ou mot de passe incorrect';
+            }
         });
 
         function isValidEmail(email) {
             return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
         }
 
-        function authenticateUser(email, password, rememberMe) {
-            // Get stored users
-            const users = JSON.parse(localStorage.getItem('dashboard-users') || '[]');
-            const user = users.find(u => u.email === email);
-
-            if (!user) {
-                generalError.textContent = 'Email ou mot de passe incorrect';
-                return;
-            }
-
-            if (user.password !== password) {
-                generalError.textContent = 'Email ou mot de passe incorrect';
-                return;
-            }
-
-            // Create session
-            const session = {
-                userId: user.id,
-                email: user.email,
-                name: user.name,
-                role: user.role || 'user',
-                loginTime: new Date().toISOString()
-            };
-
-            localStorage.setItem('dashboard-session', JSON.stringify(session));
-
-            if (rememberMe) {
-                localStorage.setItem('dashboard-remember-email', email);
-            } else {
-                localStorage.removeItem('dashboard-remember-email');
-            }
-
-            // Redirect to dashboard
-            window.location.href = 'index.html';
-        }
-
-        // Pre-fill email if remembered
         window.addEventListener('DOMContentLoaded', () => {
             const rememberedEmail = localStorage.getItem('dashboard-remember-email');
             if (rememberedEmail) {

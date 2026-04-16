@@ -1,12 +1,18 @@
-const User = require('../models/User');
+const bcrypt = require('bcryptjs');
+const {
+  findAllUsers,
+  findUserById,
+  findUserByEmail,
+  updateUser,
+} = require('../models/User');
 
 const getAllUsers = async (req, res) => {
-  const users = await User.find({}).select('-password');
+  const users = await findAllUsers();
   res.json(users);
 };
 
 const getUserProfile = async (req, res) => {
-  const user = await User.findById(req.user._id).select('-password');
+  const user = await findUserById(req.user.id);
   if (!user) {
     return res.status(404).json({ message: 'User not found.' });
   }
@@ -14,20 +20,30 @@ const getUserProfile = async (req, res) => {
 };
 
 const updateUserProfile = async (req, res) => {
-  const user = await User.findById(req.user._id);
+  const user = await findUserById(req.user.id);
   if (!user) {
     return res.status(404).json({ message: 'User not found.' });
   }
 
-  user.name = req.body.name || user.name;
-  user.email = req.body.email || user.email;
-  if (req.body.password) {
-    user.password = req.body.password;
+  if (req.body.email && req.body.email !== user.email) {
+    const emailTaken = await findUserByEmail(req.body.email);
+    if (emailTaken && emailTaken.id !== req.user.id) {
+      return res.status(400).json({ message: 'Email is already in use.' });
+    }
   }
 
-  const updatedUser = await user.save();
+  const updates = {
+    name: req.body.name || user.name,
+    email: req.body.email || user.email,
+  };
+
+  if (req.body.password) {
+    updates.password = await bcrypt.hash(req.body.password, 10);
+  }
+
+  const updatedUser = await updateUser(req.user.id, updates);
   res.json({
-    id: updatedUser._id,
+    id: updatedUser.id,
     name: updatedUser.name,
     email: updatedUser.email,
     role: updatedUser.role,
