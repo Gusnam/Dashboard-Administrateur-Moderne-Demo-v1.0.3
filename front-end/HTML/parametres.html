@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Paramètres - Dashboard Administrateur Moderne</title>
+    <link rel="stylesheet" href="../CSS/style.css" />
+    <link rel="stylesheet" href="../CSS/components.css" />
+    <script>
+        function initializePreviewMode() {
+            const isAuthenticated = localStorage.getItem('dashboard-session');
+            if (!isAuthenticated) {
+                document.documentElement.setAttribute('data-preview-mode', 'true');
+                document.body.classList.add('preview-mode');
+            } else {
+                document.documentElement.removeAttribute('data-preview-mode');
+                document.body.classList.remove('preview-mode');
+            }
+        }
+
+        function initializeDarkMode() {
+            if (localStorage.getItem('dashboard-dark-mode') === 'true') {
+                document.documentElement.setAttribute('data-dark', 'true');
+                document.body.classList.add('dark');
+            } else {
+                document.body.classList.remove('dark');
+            }
+        }
+
+        initializePreviewMode();
+        initializeDarkMode();
+    </script>
+</head>
+<body>
+    <div class="app" id="app">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar__brand">
+                <svg class="sidebar__brand-icon" width="28" height="28" viewBox="0 0 28 28" fill="none">
+                    <rect width="28" height="28" rx="7" fill="url(#gradient-brand)"/>
+                    <path d="M7 14L12 9L18 15L21 12" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                    <defs>
+                        <linearGradient id="gradient-brand" x1="0" y1="0" x2="28" y2="28">
+                            <stop offset="0%" stop-color="#0d6efd"/>
+                            <stop offset="100%" stop-color="#6610f2"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <h1>AdminDash</h1>
+            </div>
+            <nav class="sidebar__nav" aria-label="Navigation principale">
+                <a href="index.html" class="sidebar__link" data-label="Tableau de bord">
+                    <svg class="sidebar__icon-svg" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M2 4a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V4zm4.5 6a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm2-2.5a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
+                    </svg>
+                    <span class="sidebar__label">Tableau de bord</span>
+                </a>
+                <a href="utilisateurs.html" class="sidebar__link" data-label="Utilisateurs">
+                    <svg class="sidebar__icon-svg" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"/>
+                    </svg>
+                    <span class="sidebar__label">Utilisateurs</span>
+                </a>
+                <a href="statistiques.html" class="sidebar__link" data-label="Statistiques">
+                    <svg class="sidebar__icon-svg" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
+                    </svg>
+                    <span class="sidebar__label">Statistiques</span>
+                </a>
+                <a href="transactions.html" class="sidebar__link" data-label="Transactions">
+                    <svg class="sidebar__icon-svg" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4z"/>
+                    </svg>
+                    <span class="sidebar__label">Transactions</span>
+                </a>
+                <a href="parametres.html" class="sidebar__link sidebar__link--active" data-label="Paramètres">
+                    <svg class="sidebar__icon-svg" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10.894 2.553a1 1 0 00-1.788 0l-.894 3.776a1 1 0 01-.949.749H3.645a1 1 0 00-.592 1.82l3.102 2.253a1 1 0 01-.364 1.657L2.163 13.97a1 1 0 001.286 1.471l3.102-2.254a1 1 0 011.658.364l.894 3.776a1 1 0 001.788 0l.894-3.776a1 1 0 01.658-1.657l3.102 2.253a1 1 0 001.286-1.47l-3.102-2.254a1 1 0 01-.364-1.657l3.102-2.253a1 1 0 00-.592-1.82h-3.996a1 1 0 01-.949-.749l-.894-3.776z"/>
+                    </svg>
+                    <span class="sidebar__label">Paramètres</span>
+                </a>
+            </nav>
+        </aside>
+
+        <div class="main">
+            <header class="topbar" style="display: flex; align-items: center; justify-content: space-between; padding: 16px 32px; background: white; border-bottom: 1px solid #e9ecef; gap: 24px; position: sticky; top: 0; z-index: 100; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);">
+                <div class="topbar__left" style="display: flex; align-items: center; gap: 16px; min-width: 200px;">
+                    <button class="btn btn--icon" id="sidebarToggle" aria-label="Ouvrir la barre latérale" style="background: none; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 8px; color: #495057; transition: all 0.2s; padding: 0;">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"/>
+                        </svg>
+                    </button>
+                    
+                    <h2 style="margin: 0; font-size: 18px; font-weight: 600; color: #212529;">Paramètres Système</h2>
+                </div>
+
+                <div class="topbar__right" style="display: flex; align-items: center; gap: 12px;">
+                    <!-- Theme Switch -->
+                    <div class="theme-switch-container" style="position: relative;">
+                        <button class="btn btn--icon theme-switch-btn" id="darkModeToggle" aria-label="Basculer le mode sombre" onclick="document.getElementById('themeMenu').toggleAttribute('hidden')" style="background: none; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 8px; color: #495057; transition: all 0.2s;">
+                            <svg class="theme-icon-sun" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v2a1 1 0 11-2 0V3a1 1 0 011-1zm4.22 1.78a1 1 0 011.414 0l1.414 1.414a1 1 0 01-1.414 1.414L13.22 3.22a1 1 0 010-1.414zm2.828 4.22a1 1 0 011 1v2a1 1 0 11-2 0v-2a1 1 0 011-1zm1.78 4.22a1 1 0 011.414 0l1.414 1.414a1 1 0 01-1.414 1.414l-1.414-1.414a1 1 0 010-1.414zM10 14a4 4 0 110-8 4 4 0 010 8z"/>
+                            </svg>
+                            <svg class="theme-icon-moon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor" style="display: none;">
+                                <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+                            </svg>
+                        </button>
+                       <div class="theme-menu" id="themeMenu" hidden style="position: absolute; top: 48px; right: 0; background: white; border-radius: 12px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1); border: 1px solid #e9ecef; z-index: 1000; overflow: hidden;">
+                            <button class="theme-menu-item" data-theme="light" style="display: block; width: 100%; padding: 12px 16px; background: none; border: none; text-align: left; cursor: pointer; font-size: 14px; transition: background 0.2s;">☀️Clair</button>
+                            <button class="theme-menu-item" data-theme="dark" style="display: block; width: 100%; padding: 12px 16px; background: none; border: none; text-align: left; cursor: pointer; font-size: 14px; border-top: 1px solid #e9ecef; transition: background 0.2s;">🌙Sombre</button>
+                            <button class="theme-menu-item" data-theme="system" style="display: block; width: 100%; padding: 12px 16px; background: none; border: none; text-align: left; cursor: pointer; font-size: 14px; border-top: 1px solid #e9ecef; transition: background 0.2s;">⚙️Système</button>
+                        </div>
+                    </div>
+
+                    <!-- Profile Avatar -->
+                    <button class="avatar avatar--interactive profile-avatar" id="profileAvatar" aria-label="Profil utilisateur" style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; cursor: pointer; color: white; font-weight: 700; font-size: 14px;">
+                        <span id="avatarText">AD</span>
+                    </button>
+
+                    <!-- Logout Button -->
+                    <button class="btn btn--ghost" id="logoutBtn" aria-label="Déconnexion" onclick="localStorage.removeItem('dashboard-session'); window.location.href='preview.html';" style="background: none; border: 1px solid #e9ecef; color: #495057; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s;">Déconnexion</button>
+                </div>
+            </header>
+
+            <main class="content">
+                <section class="settings-section">
+                    <div class="settings-group">
+                        <h3>Profil Administrateur</h3>
+                        <div class="form-group">
+                            <label for="admin-name">Nom complet</label>
+                            <input type="text" id="admin-name" placeholder="Nom complet" class="preview-blur-input" />
+                        </div>
+                        <div class="form-group">
+                            <label for="admin-username">Nom d'utilisateur</label>
+                            <input type="text" id="admin-username" placeholder="Nom d'utilisateur" class="preview-blur-input" />
+                        </div>
+                        <div class="form-group">
+                            <label for="admin-email">Email</label>
+                            <input type="email" id="admin-email" placeholder="admin@example.com" class="preview-blur-input" />
+                        </div>
+                        <div class="form-group">
+                            <label for="admin-role">Rôle</label>
+                            <input type="text" id="admin-role" placeholder="Rôle" class="preview-blur-input" />
+                        </div>
+                        <button class="btn btn--primary">Sauvegarder</button>
+                    </div>
+
+                    <div class="settings-group">
+                        <h3>Préférences</h3>
+                        <div class="form-group">
+                            <label for="theme">Thème</label>
+                            <select id="theme">
+                                <option>Automatique</option>
+                                <option>Clair</option>
+                                <option>Sombre</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="language">Langue</label>
+                            <select id="language">
+                                <option>Français</option>
+                                <option>English</option>
+                            </select>
+                        </div>
+                        <button class="btn btn--primary">Appliquer</button>
+                    </div>
+
+                    <div class="settings-group">
+                        <h3>Sécurité</h3>
+                        <div class="form-group">
+                            <label for="current-password">Mot de passe actuel</label>
+                            <input type="password" id="current-password" />
+                        </div>
+                        <div class="form-group">
+                            <label for="new-password">Nouveau mot de passe</label>
+                            <input type="password" id="new-password" />
+                        </div>
+                        <button class="btn btn--primary">Changer</button>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Update theme icons visibility
+        function updateThemeIcons() {
+            const isDarkMode = localStorage.getItem('dashboard-dark-mode') === 'true';
+            const sunIcon = document.querySelector('.theme-icon-sun');
+            const moonIcon = document.querySelector('.theme-icon-moon');
+            if (sunIcon && moonIcon) {
+                if (isDarkMode) {
+                    sunIcon.style.display = 'none';
+                    moonIcon.style.display = 'block';
+                } else {
+                    sunIcon.style.display = 'block';
+                    moonIcon.style.display = 'none';
+                }
+            }
+        }
+        
+        // Theme Toggle Function
+        function toggleTheme(theme) {
+            if (theme === 'light') {
+                localStorage.setItem('dashboard-dark-mode', 'false');
+                localStorage.setItem('dashboard-theme', 'light');
+                document.documentElement.removeAttribute('data-dark');
+                document.body.classList.remove('dark');
+            } else if (theme === 'dark') {
+                localStorage.setItem('dashboard-dark-mode', 'true');
+                localStorage.setItem('dashboard-theme', 'dark');
+                document.documentElement.setAttribute('data-dark', 'true');
+                document.body.classList.add('dark');
+            } else if (theme === 'system') {
+                localStorage.setItem('dashboard-theme', 'system');
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                if (prefersDark) {
+                    localStorage.setItem('dashboard-dark-mode', 'true');
+                    document.documentElement.setAttribute('data-dark', 'true');
+                    document.body.classList.add('dark');
+                } else {
+                    localStorage.setItem('dashboard-dark-mode', 'false');
+                    document.documentElement.removeAttribute('data-dark');
+                    document.body.classList.remove('dark');
+                }
+            }
+            updateThemeIcons();
+            // Close theme menu after selection
+            document.getElementById('themeMenu').setAttribute('hidden', '');
+        }
+
+        // Close theme menu when clicking outside
+        document.addEventListener('click', function(event) {
+            const themeMenu = document.getElementById('themeMenu');
+            const themeContainer = document.querySelector('.theme-switch-container');
+            if (!themeContainer.contains(event.target) && !themeMenu.hasAttribute('hidden')) {
+                themeMenu.setAttribute('hidden', '');
+            }
+        });
+    </script>
+
+    <script src="../SCRIPTS/modal-system.js"></script>
+    <script src="../SCRIPTS/preview-mode.js"></script>
+    <script src="../SCRIPTS/app.js"></script>
+</body>
+</html>
