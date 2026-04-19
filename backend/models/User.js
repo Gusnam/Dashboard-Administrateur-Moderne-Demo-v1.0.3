@@ -1,6 +1,13 @@
 const { pool } = require('../config/db');
+const { devUserOperations } = require('../config/devData');
+
+const isDevMode = process.env.DEV_MODE === 'true';
 
 const findUserByEmail = async (email) => {
+  if (isDevMode) {
+    return devUserOperations.findUserByEmail(email);
+  }
+
   const [rows] = await pool.query(
     'SELECT id, name, email, password, role, created_at, updated_at FROM users WHERE email = ?',
     [email]
@@ -9,6 +16,10 @@ const findUserByEmail = async (email) => {
 };
 
 const findUserById = async (id) => {
+  if (isDevMode) {
+    return devUserOperations.findUserById(id);
+  }
+
   const [rows] = await pool.query(
     'SELECT id, name, email, role, created_at, updated_at FROM users WHERE id = ?',
     [id]
@@ -17,6 +28,10 @@ const findUserById = async (id) => {
 };
 
 const findAllUsers = async () => {
+  if (isDevMode) {
+    return devUserOperations.findAllUsers();
+  }
+
   const [rows] = await pool.query(
     'SELECT id, name, email, role, created_at, updated_at FROM users ORDER BY id DESC'
   );
@@ -24,6 +39,10 @@ const findAllUsers = async () => {
 };
 
 const createUser = async ({ name, email, password, role = 'user' }) => {
+  if (isDevMode) {
+    return devUserOperations.createUser({ name, email, password, role });
+  }
+
   const [result] = await pool.query(
     'INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)',
     [name, email, password, role]
@@ -38,6 +57,10 @@ const createUser = async ({ name, email, password, role = 'user' }) => {
 };
 
 const updateUser = async (id, updates) => {
+  if (isDevMode) {
+    return devUserOperations.updateUser(id, updates);
+  }
+
   const fields = [];
   const values = [];
 

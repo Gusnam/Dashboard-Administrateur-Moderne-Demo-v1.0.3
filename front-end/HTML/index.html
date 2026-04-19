@@ -25,26 +25,23 @@
             }
         }
         
-        // Apply dark mode before page renders
-        function initializeDarkMode() {
-            if (localStorage.getItem('dashboard-dark-mode') === 'true') {
+        function initializeTheme() {
+            const savedTheme = localStorage.getItem('dashboard-theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const darkModeStored = localStorage.getItem('dashboard-dark-mode') === 'true';
+            const useDark = savedTheme === 'dark'
+                || (savedTheme === 'system' && prefersDark)
+                || (!savedTheme && darkModeStored)
+                || (savedTheme !== 'light' && savedTheme !== 'system' && darkModeStored);
+
+            if (useDark) {
                 document.documentElement.setAttribute('data-dark', 'true');
                 document.body.classList.add('dark');
+                localStorage.setItem('dashboard-dark-mode', 'true');
             } else {
+                document.documentElement.removeAttribute('data-dark');
                 document.body.classList.remove('dark');
-            }
-        }
-        
-        // Theme system preference
-        function initializeSystemTheme() {
-            const savedTheme = localStorage.getItem('dashboard-theme');
-            if (savedTheme === 'system') {
-                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                if (prefersDark) {
-                    document.documentElement.setAttribute('data-dark', 'true');
-                    document.body.classList.add('dark');
-                    localStorage.setItem('dashboard-dark-mode', 'true');
-                }
+                localStorage.setItem('dashboard-dark-mode', 'false');
             }
         }
         
@@ -67,8 +64,8 @@
         // Execute initialization
         checkAuthentication();
         initializeAuthMode();
-        initializeDarkMode();
-        initializeSystemTheme();
+        initializeTheme();
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', initializeTheme);
         window.addEventListener('DOMContentLoaded', updateThemeIcons);
         updateThemeIcons();
     </script>

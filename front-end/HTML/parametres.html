@@ -18,17 +18,29 @@
             }
         }
 
-        function initializeDarkMode() {
-            if (localStorage.getItem('dashboard-dark-mode') === 'true') {
+        function initializeTheme() {
+            const savedTheme = localStorage.getItem('dashboard-theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const darkModeStored = localStorage.getItem('dashboard-dark-mode') === 'true';
+            const useDark = savedTheme === 'dark'
+                || (savedTheme === 'system' && prefersDark)
+                || (!savedTheme && darkModeStored)
+                || (savedTheme !== 'light' && savedTheme !== 'system' && darkModeStored);
+
+            if (useDark) {
                 document.documentElement.setAttribute('data-dark', 'true');
                 document.body.classList.add('dark');
+                localStorage.setItem('dashboard-dark-mode', 'true');
             } else {
+                document.documentElement.removeAttribute('data-dark');
                 document.body.classList.remove('dark');
+                localStorage.setItem('dashboard-dark-mode', 'false');
             }
         }
 
         initializePreviewMode();
-        initializeDarkMode();
+        initializeTheme();
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', initializeTheme);
     </script>
 </head>
 <body>

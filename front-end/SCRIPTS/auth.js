@@ -1,9 +1,10 @@
 const API_BASE_URL = getApiBaseUrl();
 
 function getApiBaseUrl() {
-    if (window.location.protocol.startsWith('http')) {
-        return `${window.location.protocol}//${window.location.host}`;
+    if (window.API_BASE_URL && typeof window.API_BASE_URL === 'string') {
+        return window.API_BASE_URL;
     }
+
     return 'http://localhost:5000';
 }
 
@@ -21,16 +22,37 @@ function getAuthToken() {
 }
 
 function saveSession(session) {
-    localStorage.setItem('dashboard-session', JSON.stringify(session));
+    const userSession = {
+        id: session.id,
+        name: session.name,
+        email: session.email,
+        role: session.role,
+        token: session.token,
+    };
+    localStorage.setItem('dashboard-session', JSON.stringify(userSession));
+    document.dispatchEvent(new Event('dashboard:auth-changed'));
 }
 
 function clearSession() {
     localStorage.removeItem('dashboard-session');
+    document.dispatchEvent(new Event('dashboard:auth-changed'));
+}
+
+function isLoggedIn() {
+    return !!getAuthToken();
+}
+
+function logout(redirectTo = 'signin.html') {
+    clearSession();
+    window.location.href = redirectTo;
 }
 
 async function apiRequest(path, options = {}) {
     const { method = 'GET', body, authenticated = false } = options;
-    const headers = { 'Content-Type': 'application/json' };
+    const headers = {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+    };
 
     if (authenticated) {
         const token = getAuthToken();
@@ -97,12 +119,22 @@ async function fetchTransactions() {
     return apiRequest('/api/transactions', { authenticated: true });
 }
 
+async function createTransaction(transaction) {
+    return apiRequest('/api/transactions', {
+        method: 'POST',
+        authenticated: true,
+        body: transaction,
+    });
+}
+
 window.auth = {
     getApiBaseUrl,
     getStoredSession,
     getAuthToken,
+    isLoggedIn,
     saveSession,
     clearSession,
+    logout,
     authLogin,
     authRegister,
     authResetPassword,
@@ -111,4 +143,5 @@ window.auth = {
     fetchUsers,
     fetchDashboardStats,
     fetchTransactions,
+    createTransaction,
 };
