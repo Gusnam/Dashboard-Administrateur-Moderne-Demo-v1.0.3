@@ -4,6 +4,14 @@
  * Controls entire UI state synchronization
  */
 
+function isAuthSessionActive() {
+    return window.auth?.isLoggedIn ? window.auth.isLoggedIn() : false;
+}
+
+function getAuthSessionKey() {
+    return window.auth?.SESSION_KEY || 'dashboard-session';
+}
+
 class GlobalStateManager {
     constructor() {
         this.state = {
@@ -30,7 +38,7 @@ class GlobalStateManager {
      * Detect current mode based on authentication
      */
     detectMode() {
-        const isAuthenticated = !!localStorage.getItem('dashboard-session');
+        const isAuthenticated = isAuthSessionActive();
         return isAuthenticated ? 'authenticated-mode' : 'preview-mode';
     }
 
@@ -38,7 +46,7 @@ class GlobalStateManager {
      * Check if user is authenticated
      */
     checkAuth() {
-        return !!localStorage.getItem('dashboard-session');
+        return isAuthSessionActive();
     }
 
     /**
@@ -187,8 +195,8 @@ class GlobalStateManager {
     setupStateListeners() {
         // Listen for auth changes
         window.addEventListener('storage', (e) => {
-            if (e.key === 'dashboard-session') {
-                this.state.isAuthenticated = !!e.newValue;
+            if (e.key === getAuthSessionKey()) {
+                this.state.isAuthenticated = isAuthSessionActive();
                 this.state.mode = this.state.isAuthenticated ? 'authenticated-mode' : 'preview-mode';
                 this.applyState();
                 this.notifyStateChange();
@@ -210,6 +218,14 @@ class GlobalStateManager {
             this.notifyStateChange();
         });
 
+        // Also listen to unified auth event
+        document.addEventListener('dashboard:auth-changed', () => {
+            this.state.isAuthenticated = isAuthSessionActive();
+            this.state.mode = this.state.isAuthenticated ? 'authenticated-mode' : 'preview-mode';
+            this.applyState();
+            this.notifyStateChange();
+        });
+
         // Listen for theme changes
         document.addEventListener('theme:changed', (e) => {
             this.state.isDarkMode = e.detail.isDark;
@@ -225,15 +241,15 @@ class GlobalStateManager {
         document.addEventListener('keydown', (e) => {
             if (e.key === 'g' && e.ctrlKey) {
                 e.preventDefault();
-                window.location.href = 'dashboard.html';
+                window.location.href = '/HTML/index.html';
             }
             if (e.key === 'u' && e.ctrlKey) {
                 e.preventDefault();
-                window.location.href = 'utilisateurs.html';
+                window.location.href = '/HTML/utilisateurs.html';
             }
             if (e.key === 's' && e.ctrlKey) {
                 e.preventDefault();
-                window.location.href = 'parametres.html';
+                window.location.href = '/HTML/parametres.html';
             }
         });
     }
@@ -251,13 +267,20 @@ class GlobalStateManager {
      * Transition to authenticated mode
      */
     transitionToAuthenticated(userData) {
-        this.state.isAuthenticated = true;
-        this.state.mode = 'authenticated-mode';
-        this.state.userData = userData;
+        if (window.auth && userData) {
+            try {
+                window.auth.saveSession(userData);
+            } catch (error) {
+                console.warn('Ignored invalid auth session data:', error);
+            }
+        }
+
+        this.state.isAuthenticated = isAuthSessionActive();
+        this.state.mode = this.state.isAuthenticated ? 'authenticated-mode' : 'preview-mode';
+        this.state.userData = window.auth?.getCurrentUser ? window.auth.getCurrentUser() : null;
         
-        localStorage.setItem('dashboard-session', JSON.stringify(userData));
-        document.documentElement.setAttribute('data-authenticated', 'true');
-        document.documentElement.setAttribute('data-mode', 'authenticated-mode');
+        document.documentElement.setAttribute('data-authenticated', String(this.state.isAuthenticated));
+        document.documentElement.setAttribute('data-mode', this.state.mode);
         
         this.applyState();
         this.notifyStateChange();
@@ -271,7 +294,9 @@ class GlobalStateManager {
         this.state.mode = 'preview-mode';
         this.state.userData = null;
         
-        localStorage.removeItem('dashboard-session');
+        if (window.auth?.clearSession) {
+            window.auth.clearSession();
+        }
         document.documentElement.setAttribute('data-authenticated', 'false');
         document.documentElement.setAttribute('data-mode', 'preview-mode');
         

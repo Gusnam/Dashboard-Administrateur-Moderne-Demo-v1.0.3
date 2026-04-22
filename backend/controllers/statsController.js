@@ -3,22 +3,46 @@ const { devTransactionOperations } = require('../config/devData');
 
 const isDevMode = process.env.DEV_MODE === 'true';
 
-const getDashboardStats = async (req, res) => {
-  if (isDevMode) {
-    const stats = await devTransactionOperations.computeStats();
-    return res.json(stats);
+const getDashboardStats = async (req, res, next) => {
+  try {
+    let stats;
+
+    if (isDevMode) {
+      // DEV MODE: use in-memory data
+      stats = await devTransactionOperations.computeStats();
+    } else {
+      // PRODUCTION MODE: query database
+      const [userResults] = await pool.query('SELECT COUNT(*) as count FROM users');
+      const totalUsers = userResults[0].count;
+
+      const [transactionResults] = await pool.query('SELECT COUNT(*) as count FROM transactions');
+      const totalTransactions = transactionResults[0].count;
+
+      const [amountResults] = await pool.query('SELECT SUM(amount) as total FROM transactions');
+      const totalTransactionAmount = parseFloat((amountResults[0].total || 0).toFixed(2));
+
+      const [pendingResults] = await pool.query(
+        "SELECT COUNT(*) as count FROM transactions WHERE status = 'pending'"
+      );
+      const pendingTransactions = pendingResults[0].count;
+
+      stats = {
+        totalUsers,
+        totalTransactions,
+        totalTransactionAmount,
+        pendingTransactions,
+      };
+    }
+
+    res.json({
+      success: true,
+      data: stats,
+      message: 'Statistics retrieved successfully.'
+    });
+  } catch (error) {
+    console.error('Get stats error:', error);
+    next(error);
   }
-
-  const [userRows] = await pool.query('SELECT COUNT(*) AS totalUsers FROM users');
-  const [transactionRows] = await pool.query('SELECT COUNT(*) AS totalTransactions, IFNULL(SUM(amount), 0) AS totalAmount FROM transactions');
-  const [pendingRows] = await pool.query("SELECT COUNT(*) AS pendingTransactions FROM transactions WHERE status = 'pending'");
-
-  res.json({
-    totalUsers: userRows[0].totalUsers || 0,
-    totalTransactions: transactionRows[0].totalTransactions || 0,
-    totalTransactionAmount: parseFloat(transactionRows[0].totalAmount) || 0,
-    pendingTransactions: pendingRows[0].pendingTransactions || 0,
-  });
 };
 
 module.exports = {

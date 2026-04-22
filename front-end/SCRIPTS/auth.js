@@ -1,4 +1,6 @@
-const API_BASE_URL = getApiBaseUrl();
+const AUTH_SESSION_KEY = 'dashboard-session';
+const AUTH_DASHBOARD_PAGE = '/HTML/index.html';
+const AUTH_API_BASE_URL = getApiBaseUrl();
 
 function getApiBaseUrl() {
     if (window.API_BASE_URL && typeof window.API_BASE_URL === 'string') {
@@ -8,43 +10,102 @@ function getApiBaseUrl() {
     return 'http://localhost:5000';
 }
 
+function normalizeSession(session) {
+    const payload = session?.data ?? session ?? {};
+    const user = payload.user ?? payload;
+    const token = payload.token ?? payload.accessToken ?? user.token ?? user.accessToken ?? null;
+
+    if (!token) {
+        return null;
+    }
+
+    return {
+        id: user.id ?? user._id ?? payload.id ?? null,
+        name: user.name ?? user.fullName ?? payload.name ?? '',
+        email: user.email ?? payload.email ?? '',
+        role: user.role ?? payload.role ?? 'Utilisateur',
+        token: String(token),
+    };
+}
+
 function getStoredSession() {
     try {
-        return JSON.parse(localStorage.getItem('dashboard-session') || 'null');
+        const rawSession = localStorage.getItem(AUTH_SESSION_KEY);
+        if (!rawSession) {
+            return null;
+        }
+
+        const session = normalizeSession(JSON.parse(rawSession));
+        if (!session) {
+            localStorage.removeItem(AUTH_SESSION_KEY);
+            return null;
+        }
+
+        return session;
     } catch {
+        localStorage.removeItem(AUTH_SESSION_KEY);
         return null;
     }
 }
 
-function getAuthToken() {
+function getToken() {
     const session = getStoredSession();
-    return session?.token || null;
+    return typeof session?.token === 'string' && session.token.trim() ? session.token : null;
 }
 
-function saveSession(session) {
-    const userSession = {
+function getAuthToken() {
+    return getToken();
+}
+
+function getCurrentUser() {
+    const session = getStoredSession();
+    if (!session) {
+        return null;
+    }
+
+    return {
         id: session.id,
         name: session.name,
         email: session.email,
         role: session.role,
-        token: session.token,
     };
-    localStorage.setItem('dashboard-session', JSON.stringify(userSession));
+}
+
+function saveSession(session) {
+    // Accept either the backend response object ({ success, data })
+    // or the raw session object ({ id, name, email, token }).
+    const userSession = normalizeSession(session);
+    if (!userSession) {
+        throw new Error('Authentication response did not include an auth token.');
+    }
+    localStorage.setItem(AUTH_SESSION_KEY, JSON.stringify(userSession));
+    // Emit both the modern event and legacy events for compatibility
     document.dispatchEvent(new Event('dashboard:auth-changed'));
+    document.dispatchEvent(new Event('auth:login'));
+    return userSession;
 }
 
 function clearSession() {
-    localStorage.removeItem('dashboard-session');
+    localStorage.removeItem(AUTH_SESSION_KEY);
     document.dispatchEvent(new Event('dashboard:auth-changed'));
+    document.dispatchEvent(new Event('auth:logout'));
 }
 
 function isLoggedIn() {
     return !!getAuthToken();
 }
 
-function logout(redirectTo = 'signin.html') {
+function logout(redirectTo = '/HTML/signin.html') {
     clearSession();
     window.location.href = redirectTo;
+}
+
+function getDashboardPage() {
+    return AUTH_DASHBOARD_PAGE;
+}
+
+function redirectToDashboard() {
+    window.location.href = getDashboardPage();
 }
 
 async function apiRequest(path, options = {}) {
@@ -55,13 +116,13 @@ async function apiRequest(path, options = {}) {
     };
 
     if (authenticated) {
-        const token = getAuthToken();
+        const token = getToken();
         if (token) {
             headers.Authorization = `Bearer ${token}`;
         }
     }
 
-    const response = await fetch(`${API_BASE_URL}${path}`, {
+    const response = await fetch(`${AUTH_API_BASE_URL}${path}`, {
         method,
         headers,
         body: body ? JSON.stringify(body) : undefined,
@@ -96,27 +157,46 @@ async function authResetPassword(email, password) {
 }
 
 async function fetchCurrentUser() {
-    return apiRequest('/api/auth/me', { authenticated: true });
+    const res = await apiRequest('/api/auth/me', { authenticated: true });
+    return res?.data ?? res;
 }
 
 async function updateProfile(updates) {
-    return apiRequest('/api/users/profile', {
+    const session = getStoredSession();
+    const userId = session?.id;
+    if (!userId) {
+        throw new Error('User ID not found in session');
+    }
+    const res = await apiRequest(`/api/users/${userId}`, {
         method: 'PUT',
         authenticated: true,
         body: updates,
     });
+    return res?.data ?? res;
 }
 
 async function fetchUsers() {
-    return apiRequest('/api/users', { authenticated: true });
+    const res = await apiRequest('/api/users', { authenticated: true });
+    return res?.data ?? res;
+}
+
+async function createUser(user) {
+    const res = await apiRequest('/api/users', {
+        method: 'POST',
+        authenticated: true,
+        body: user,
+    });
+    return res?.data ?? res;
 }
 
 async function fetchDashboardStats() {
-    return apiRequest('/api/stats', { authenticated: true });
+    const res = await apiRequest('/api/stats', { authenticated: true });
+    return res?.data ?? res;
 }
 
 async function fetchTransactions() {
-    return apiRequest('/api/transactions', { authenticated: true });
+    const res = await apiRequest('/api/transactions', { authenticated: true });
+    return res?.data ?? res;
 }
 
 async function createTransaction(transaction) {
@@ -128,19 +208,26 @@ async function createTransaction(transaction) {
 }
 
 window.auth = {
+    SESSION_KEY: AUTH_SESSION_KEY,
+    DASHBOARD_PAGE: AUTH_DASHBOARD_PAGE,
     getApiBaseUrl,
     getStoredSession,
+    getToken,
     getAuthToken,
+    getCurrentUser,
     isLoggedIn,
     saveSession,
     clearSession,
     logout,
+    getDashboardPage,
+    redirectToDashboard,
     authLogin,
     authRegister,
     authResetPassword,
     fetchCurrentUser,
     updateProfile,
     fetchUsers,
+    createUser,
     fetchDashboardStats,
     fetchTransactions,
     createTransaction,

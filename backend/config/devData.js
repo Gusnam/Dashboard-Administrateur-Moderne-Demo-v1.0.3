@@ -22,6 +22,7 @@ const initializeDemoData = async () => {
       email: 'admin@example.com',
       password: '$2a$10$PLACEHOLDER_ADMIN_HASH', // Will be replaced below
       role: 'admin',
+      status: 'Actif',
       created_at: new Date(),
       updated_at: new Date(),
     },
@@ -31,6 +32,7 @@ const initializeDemoData = async () => {
       email: 'alice@example.com',
       password: '$2a$10$PLACEHOLDER_ALICE_HASH',
       role: 'user',
+      status: 'Actif',
       created_at: new Date(),
       updated_at: new Date(),
     },
@@ -40,6 +42,7 @@ const initializeDemoData = async () => {
       email: 'pierre@example.com',
       password: '$2a$10$PLACEHOLDER_PIERRE_HASH',
       role: 'user',
+      status: 'En attente',
       created_at: new Date(),
       updated_at: new Date(),
     },
@@ -49,6 +52,7 @@ const initializeDemoData = async () => {
       email: 'claire@example.com',
       password: '$2a$10$PLACEHOLDER_CLAIRE_HASH',
       role: 'user',
+      status: 'Actif',
       created_at: new Date(),
       updated_at: new Date(),
     },
@@ -58,6 +62,7 @@ const initializeDemoData = async () => {
       email: 'lucie@example.com',
       password: '$2a$10$PLACEHOLDER_LUCIE_HASH',
       role: 'user',
+      status: 'Inactif',
       created_at: new Date(),
       updated_at: new Date(),
     },
@@ -189,13 +194,14 @@ const devUserOperations = {
     });
   },
 
-  createUser: async ({ name, email, password, role = 'user' }) => {
+  createUser: async ({ name, email, password, role = 'user', status = 'Actif' }) => {
     const newUser = {
       id: nextUserId++,
       name,
       email,
       password,
       role,
+      status,
       created_at: new Date(),
       updated_at: new Date(),
     };
@@ -205,6 +211,8 @@ const devUserOperations = {
       name: newUser.name,
       email: newUser.email,
       role: newUser.role,
+      status: newUser.status,
+      created_at: newUser.created_at,
     };
   },
 
@@ -216,6 +224,8 @@ const devUserOperations = {
     if (updates.name) user.name = updates.name;
     if (updates.email) user.email = updates.email;
     if (updates.password) user.password = updates.password;
+    if (updates.role) user.role = updates.role;
+    if (updates.status) user.status = updates.status;
 
     user.updated_at = new Date();
     devUsers[userIndex] = user;

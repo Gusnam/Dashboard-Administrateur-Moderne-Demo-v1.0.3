@@ -202,24 +202,24 @@ class PreviewModeSystem {
                 if (searchInput) searchInput.focus();
             }
 
-            // G for dashboard
+            // G stays on the public preview dashboard
             if (e.key === 'g' && !e.ctrlKey && !e.metaKey) {
                 if (document.activeElement.tagName !== 'INPUT') {
-                    window.location.hash = '#dashboard';
+                    window.location.href = '/HTML/preview.html';
                 }
             }
 
-            // U for users
+            // Protected app pages should route through signin from preview mode
             if (e.key === 'u' && !e.ctrlKey && !e.metaKey) {
                 if (document.activeElement.tagName !== 'INPUT') {
-                    window.location.hash = '#users';
+                    window.location.href = '/HTML/signin.html';
                 }
             }
 
-            // S for settings
+            // Protected app pages should route through signin from preview mode
             if (e.key === 's' && !e.ctrlKey && !e.metaKey) {
                 if (document.activeElement.tagName !== 'INPUT') {
-                    window.location.hash = '#settings';
+                    window.location.href = '/HTML/signin.html';
                 }
             }
         });

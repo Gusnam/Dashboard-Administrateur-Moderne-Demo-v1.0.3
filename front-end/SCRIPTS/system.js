@@ -21,10 +21,18 @@ const CONFIG = {
     DATA_ANIMATION_DURATION: 800
 };
 
+function getAuthSessionKey() {
+    return window.auth?.SESSION_KEY || CONFIG.STORAGE_KEYS.SESSION;
+}
+
+function isAuthSessionActive() {
+    return window.auth?.isLoggedIn ? window.auth.isLoggedIn() : false;
+}
+
 // ============ GLOBAL STATE MANAGEMENT ============
 class GlobalState {
     constructor() {
-        this.isAuthenticated = !!localStorage.getItem(CONFIG.STORAGE_KEYS.SESSION);
+        this.isAuthenticated = isAuthSessionActive();
         this.mode = this.isAuthenticated ? 'authenticated' : 'preview';
         this.isDarkMode = localStorage.getItem(CONFIG.STORAGE_KEYS.DARK_MODE) === 'true';
         this.sidebarCollapsed = localStorage.getItem(CONFIG.STORAGE_KEYS.SIDEBAR_COLLAPSED) === 'true';
@@ -46,15 +54,13 @@ class GlobalState {
         document.body.classList.add(activeClass);
         document.documentElement.setAttribute('data-mode', this.mode);
         
-        // Show/hide auth buttons based on mode
-        this.updateHeaderButtons();
+        // Update header elements visibility based on actual auth state
+        this.updateHeaderElements();
     }
 
-    updateHeaderButtons() {
+    updateHeaderElements() {
         const authButtonsContainer = document.querySelector('.auth-buttons-container');
         const profileSection = document.querySelector('.profile-section');
-        const notificationContainer = document.querySelector('.notification-container');
-        const themeContainer = document.querySelector('.theme-switch-container');
         
         if (this.mode === 'preview') {
             if (authButtonsContainer) authButtonsContainer.style.display = 'flex';
@@ -68,16 +74,6 @@ class GlobalState {
     setAuthenticated(value) {
         this.isAuthenticated = value;
         this.mode = value ? 'authenticated' : 'preview';
-        
-        if (value) {
-            localStorage.setItem(CONFIG.STORAGE_KEYS.SESSION, JSON.stringify({
-                user: 'User',
-                timestamp: new Date().toISOString()
-            }));
-        } else {
-            localStorage.removeItem(CONFIG.STORAGE_KEYS.SESSION);
-        }
-        
         this.applyMode();
         this.notifyListeners();
     }
@@ -95,11 +91,32 @@ class GlobalState {
 
     setupModeListeners() {
         window.addEventListener('storage', (e) => {
-            if (e.key === CONFIG.STORAGE_KEYS.SESSION) {
-                this.isAuthenticated = !!e.newValue;
+            if (e.key === getAuthSessionKey()) {
+                this.isAuthenticated = isAuthSessionActive();
                 this.mode = this.isAuthenticated ? 'authenticated' : 'preview';
                 this.applyMode();
             }
+        });
+
+        document.addEventListener('auth:login', () => {
+            this.isAuthenticated = true;
+            this.mode = 'authenticated';
+            this.applyMode();
+            this.notifyListeners();
+        });
+
+        document.addEventListener('auth:logout', () => {
+            this.isAuthenticated = false;
+            this.mode = 'preview';
+            this.applyMode();
+            this.notifyListeners();
+        });
+
+        document.addEventListener('dashboard:auth-changed', () => {
+            this.isAuthenticated = isAuthSessionActive();
+            this.mode = this.isAuthenticated ? 'authenticated' : 'preview';
+            this.applyMode();
+            this.notifyListeners();
         });
     }
 }
@@ -361,94 +378,28 @@ class SidebarManager {
     }
 }
 
-// ============ AUTHENTICATION SYSTEM ============
-class AuthManager {
-    constructor(globalState) {
-        this.state = globalState;
+// ============ PROTECTED ACTIONS ============
+class ProtectedActionManager {
+    constructor() {
         this.init();
     }
 
     init() {
-        this.setupAuthButtons();
         this.setupProtectedActions();
-    }
-
-    setupAuthButtons() {
-        const signinBtn = document.querySelector('[href*="signin"]');
-        const signupBtn = document.querySelector('[href*="signup"]');
-
-        if (signinBtn) {
-            signinBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.openSignInModal();
-            });
-        }
-
-        if (signupBtn) {
-            signupBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.openSignUpModal();
-            });
-        }
     }
 
     setupProtectedActions() {
         document.addEventListener('click', (e) => {
             if (e.target.closest('[data-protected]')) {
-                if (!this.state.isAuthenticated) {
+                if (!isAuthSessionActive()) {
                     e.preventDefault();
-                    showToast('Veuillez vous connecter pour utiliser cette fonction', 'warning');
-                    this.openSignInModal();
+                    if (typeof showToast === 'function') {
+                        showToast('Veuillez vous connecter pour utiliser cette fonction', 'warning');
+                    }
+                    window.location.href = '/HTML/signin.html';
                 }
             }
         });
-    }
-
-    login(email, password) {
-        // Simulate login
-        if (email && password) {
-            this.state.setAuthenticated(true);
-            showToast('Connecté avec succès!', 'success');
-            return true;
-        }
-        showToast('Identifiants invalides', 'error');
-        return false;
-    }
-
-    signup(email, password, confirmPassword) {
-        if (password !== confirmPassword) {
-            showToast('Les mots de passe ne correspondent pas', 'error');
-            return false;
-        }
-        if (email && password) {
-            this.state.setAuthenticated(true);
-            showToast('Compte créé avec succès!', 'success');
-            return true;
-        }
-        return false;
-    }
-
-    logout() {
-        this.state.setAuthenticated(false);
-        showToast('Déconnecté', 'info');
-    }
-
-    openSignInModal() {
-        const modal = document.getElementById('authModalOverlay');
-        if (modal) {
-            modal.hidden = false;
-            document.getElementById('authForm').style.display = 'block';
-            document.getElementById('signupForm').style.display = 'none';
-        }
-    }
-
-    openSignUpModal() {
-        const modal = document.getElementById('authModalOverlay');
-        if (modal) {
-            modal.hidden = false;
-            document.getElementById('authForm').style.display = 'none';
-            document.getElementById('signupForm').style.display = 'block';
-        }
     }
 }
 
@@ -533,11 +484,11 @@ class SearchManager {
 
     performSearch(query) {
         const pages = [
-            { title: 'Tableau de bord', url: 'index.html', icon: '📊' },
-            { title: 'Utilisateurs', url: 'utilisateurs.html', icon: '👥' },
-            { title: 'Statistiques', url: 'statistiques.html', icon: '📈' },
-            { title: 'Transactions', url: 'transactions.html', icon: '💳' },
-            { title: 'Paramètres', url: 'parametres.html', icon: '⚙️' }
+            { title: 'Tableau de bord', url: '/HTML/index.html', icon: '📊' },
+            { title: 'Utilisateurs', url: '/HTML/utilisateurs.html', icon: '👥' },
+            { title: 'Statistiques', url: '/HTML/statistiques.html', icon: '📈' },
+            { title: 'Transactions', url: '/HTML/transactions.html', icon: '💳' },
+            { title: 'Paramètres', url: '/HTML/parametres.html', icon: '⚙️' }
         ];
 
         const results = pages.filter(p => p.title.toLowerCase().includes(query));
@@ -549,15 +500,15 @@ class SearchManager {
             if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey) {
                 if (e.key === 'g') {
                     e.preventDefault();
-                    window.location.href = 'index.html';
+                    window.location.href = '/HTML/index.html';
                 }
                 if (e.key === 'u') {
                     e.preventDefault();
-                    window.location.href = 'utilisateurs.html';
+                    window.location.href = '/HTML/utilisateurs.html';
                 }
                 if (e.key === 's') {
                     e.preventDefault();
-                    window.location.href = 'parametres.html';
+                    window.location.href = '/HTML/parametres.html';
                 }
             }
         });
@@ -601,34 +552,24 @@ class ThemeManager {
 }
 
 // ============ MODAL MANAGEMENT ============
+// NOTE: Modal management is now handled by modal-system.js
+// Do NOT initialize modal handling here - it will conflict
 class ModalManager {
     static closeAll() {
+        // Delegate to modal-system.js if available
+        if (window.modalManager && typeof window.modalManager.closeAll === 'function') {
+            window.modalManager.closeAll();
+            return;
+        }
         document.querySelectorAll('.modal__overlay:not([hidden])').forEach(overlay => {
             overlay.hidden = true;
         });
     }
 
     static setup() {
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                ModalManager.closeAll();
-            }
-        });
-
-        document.querySelectorAll('.modal__overlay').forEach(overlay => {
-            overlay.addEventListener('click', (e) => {
-                if (e.target === overlay) {
-                    overlay.hidden = true;
-                }
-            });
-        });
-
-        document.querySelectorAll('.modal-close-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const overlay = btn.closest('.modal__overlay');
-                if (overlay) overlay.hidden = true;
-            });
-        });
+        // Modal setup is now handled by modal-system.js
+        // This is deprecated
+        console.log('ModalManager.setup() is deprecated - modal handling is in modal-system.js');
     }
 }
 
@@ -640,10 +581,11 @@ function initializeApp() {
 
     // Initialize managers
     new SidebarManager();
-    new AuthManager(window.globalState);
+    new ProtectedActionManager();
     new SearchManager();
     new ThemeManager(window.globalState);
-    ModalManager.setup();
+    // NOTE: Modal management is now handled by modal-system.js
+    // Do NOT call ModalManager.setup() here to avoid conflicts
 
     // Add CSS animations
     addAnimationStyles();
@@ -705,7 +647,7 @@ window.GlobalState = GlobalState;
 window.DataMasking = DataMasking;
 window.DataGenerator = DataGenerator;
 window.AnimationUtils = AnimationUtils;
-window.AuthManager = AuthManager;
+window.ProtectedActionManager = ProtectedActionManager;
 window.SidebarManager = SidebarManager;
 window.SearchManager = SearchManager;
 window.ThemeManager = ThemeManager;

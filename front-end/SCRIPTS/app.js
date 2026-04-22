@@ -10,6 +10,18 @@ const STORAGE_KEY_THEME = 'dashboard-theme';
 const NOTIFICATION_STORAGE_KEY = 'dashboard-notifications';
 const SEARCH_STORAGE_KEY = 'dashboard-search-history';
 
+function getAuthSessionKey() {
+    return window.auth?.SESSION_KEY || 'dashboard-session';
+}
+
+function isAuthSessionActive() {
+    return window.auth?.isLoggedIn ? window.auth.isLoggedIn() : false;
+}
+
+function getCurrentAuthUser() {
+    return window.auth?.getCurrentUser ? window.auth.getCurrentUser() : null;
+}
+
 // ============ DOM ELEMENTS ============
 const app = document.getElementById('app');
 const sidebar = document.getElementById('sidebar');
@@ -262,15 +274,15 @@ class SearchManager {
             if (e.ctrlKey || e.metaKey) {
                 if (e.key === 'g') {
                     e.preventDefault();
-                    window.location.href = 'index.html';
+                    window.location.href = '/HTML/index.html';
                 }
                 if (e.key === 'u') {
                     e.preventDefault();
-                    window.location.href = 'utilisateurs.html';
+                    window.location.href = '/HTML/utilisateurs.html';
                 }
                 if (e.key === 's') {
                     e.preventDefault();
-                    window.location.href = 'parametres.html';
+                    window.location.href = '/HTML/parametres.html';
                 }
             }
         });
@@ -298,11 +310,11 @@ class SearchManager {
 
     getSearchResults(query) {
         const pages = [
-            { title: 'Tableau de bord', url: 'index.html', icon: '📊', desc: 'Vue d\'ensemble des statistiques' },
-            { title: 'Utilisateurs', url: 'utilisateurs.html', icon: '👥', desc: 'Gestion des utilisateurs' },
-            { title: 'Statistiques', url: 'statistiques.html', icon: '📈', desc: 'Graphiques et analyses' },
-            { title: 'Transactions', url: 'transactions.html', icon: '💳', desc: 'Historique des transactions' },
-            { title: 'Paramètres', url: 'parametres.html', icon: '⚙️', desc: 'Configuration du compte' }
+            { title: 'Tableau de bord', url: '/HTML/index.html', icon: '📊', desc: 'Vue d\'ensemble des statistiques' },
+            { title: 'Utilisateurs', url: '/HTML/utilisateurs.html', icon: '👥', desc: 'Gestion des utilisateurs' },
+            { title: 'Statistiques', url: '/HTML/statistiques.html', icon: '📈', desc: 'Graphiques et analyses' },
+            { title: 'Transactions', url: '/HTML/transactions.html', icon: '💳', desc: 'Historique des transactions' },
+            { title: 'Paramètres', url: '/HTML/parametres.html', icon: '⚙️', desc: 'Configuration du compte' }
         ];
 
         return pages.filter(page =>
@@ -396,16 +408,16 @@ function initModals() {
     const confirmCancel = document.getElementById('confirmCancel');
 
     if (modalClose) {
-        modalClose.addEventListener('click', () => modalOverlay?.classList.remove('active'));
+        modalClose.addEventListener('click', () => closeEditModal());
     }
 
     if (modalCancel) {
-        modalCancel.addEventListener('click', () => modalOverlay?.classList.remove('active'));
+        modalCancel.addEventListener('click', () => closeEditModal());
     }
 
     if (modalOverlay) {
         modalOverlay.addEventListener('click', (e) => {
-            if (e.target === modalOverlay) modalOverlay.classList.remove('active');
+            if (e.target === modalOverlay) closeEditModal();
         });
     }
 
@@ -425,6 +437,13 @@ function initModals() {
 
     // Setup handlers for all universal close buttons
     setupUniversalModalClosers();
+
+    function closeEditModal() {
+        if (!modalOverlay) return;
+        modalOverlay.classList.remove('active');
+        modalOverlay.hidden = true;
+        document.body.style.overflow = '';
+    }
 }
 
 // ============ QUICK ACTION MODALS ============
@@ -434,8 +453,7 @@ function initQuickActionModals() {
     quickActionButtons.forEach(button => {
         button.addEventListener('click', (e) => {
             // Check if user is authenticated
-            const isAuthenticated = localStorage.getItem('dashboard-session');
-            if (!isAuthenticated) {
+            if (!isAuthSessionActive()) {
                 showToast('Veuillez vous connecter pour utiliser cette fonction', 'warning');
                 return;
             }
@@ -639,6 +657,7 @@ function initUserEditing() {
             form.elements['userStatus'].value = data.status || 'Actif';
         }
         
+        modalOverlay.hidden = false;
         modalOverlay.classList.add('active');
     }
 }
@@ -654,7 +673,11 @@ function initFormHandlers() {
             const data = Object.fromEntries(formData);
             
             showToast('Utilisateur mis à jour avec succès', 'success');
-            document.getElementById('modalOverlay').classList.remove('active');
+            const modalOverlay = document.getElementById('modalOverlay');
+            if (modalOverlay) {
+                modalOverlay.classList.remove('active');
+                modalOverlay.hidden = true;
+            }
             editUserForm.reset();
         });
     }
@@ -818,12 +841,14 @@ if (document.readyState === 'loading') {
     });
 } else {
     new ReportGenerator();
+}
+
 function initProfileAvatar() {
     const profileAvatar = document.getElementById('profileAvatar');
     
     if (profileAvatar) {
         profileAvatar.addEventListener('click', () => {
-            window.location.href = 'parametres.html';
+            window.location.href = '/HTML/parametres.html';
         });
     }
 }
@@ -972,7 +997,7 @@ function setupAuthRedirects() {
     const profileAvatar = document.getElementById('profileAvatar');
     if (profileAvatar && typeof profileAvatar.addEventListener === 'function') {
         profileAvatar.addEventListener('click', () => {
-            window.location.href = 'parametres.html';
+            window.location.href = '/HTML/parametres.html';
         });
     }
 
@@ -980,8 +1005,11 @@ function setupAuthRedirects() {
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', () => {
-            localStorage.removeItem('dashboard-session');
-            window.location.href = 'signin.html';
+            if (window.auth?.logout) {
+                window.auth.logout('/HTML/signin.html');
+            } else {
+                window.location.href = '/HTML/signin.html';
+            }
         });
     }
 }
@@ -989,8 +1017,8 @@ function setupAuthRedirects() {
 // ============ GLOBAL STATE MANAGER ============
 class GlobalStateManager {
     constructor() {
-        this.isPreviewMode = !localStorage.getItem('dashboard-session');
-        this.isAuthenticated = !!localStorage.getItem('dashboard-session');
+        this.isAuthenticated = isAuthSessionActive();
+        this.isPreviewMode = !this.isAuthenticated;
         this.init();
     }
 
@@ -1102,7 +1130,7 @@ class GlobalStateManager {
                 btn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     showToast('Cette action nécessite une authentification', 'warning');
-                    window.location.href = 'signin.html';
+                    window.location.href = '/HTML/signin.html';
                 });
                 btn.style.opacity = '0.6';
             }
@@ -1118,13 +1146,7 @@ class GlobalStateManager {
     }
 
     getCurrentUser() {
-        const session = localStorage.getItem('dashboard-session');
-        if (!session) return null;
-        try {
-            return JSON.parse(session);
-        } catch {
-            return null;
-        }
+        return getCurrentAuthUser();
     }
 
     getUserInitials(name) {
@@ -1231,8 +1253,8 @@ class GlobalStateManager {
     setupStateListeners() {
         // Listen for storage changes (from other tabs)
         window.addEventListener('storage', (e) => {
-            if (e.key === 'dashboard-session') {
-                this.isAuthenticated = !!e.newValue;
+            if (e.key === getAuthSessionKey()) {
+                this.isAuthenticated = isAuthSessionActive();
                 this.isPreviewMode = !this.isAuthenticated;
                 this.syncGlobalState();
             }
@@ -1240,8 +1262,8 @@ class GlobalStateManager {
 
         // Listen for sign in/out
         document.addEventListener('dashboard:auth-changed', () => {
-            this.isPreviewMode = !localStorage.getItem('dashboard-session');
-            this.isAuthenticated = !!localStorage.getItem('dashboard-session');
+            this.isAuthenticated = isAuthSessionActive();
+            this.isPreviewMode = !this.isAuthenticated;
             this.syncGlobalState();
         });
     }
@@ -1320,8 +1342,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Initialize UI components
     initSidebar();
-    initModals();
-    initQuickActionModals();
+    // NOTE: Modal initialization is now handled by modal-system.js
+    // Do NOT call initModals() to avoid conflicts
+    // Quick action modal opening is handled by modal-system.js.
     initQuickActionFormHandlers();
     initBulkActions();
     initUserEditing();

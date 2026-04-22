@@ -232,8 +232,8 @@
             <h1 class="logo">AdminDash</h1>
             <div class="nav-actions">
                 <button class="dark-toggle" id="darkToggle" aria-label="Basculer le mode sombre">🌙</button>
-                <a href="signin.html" class="btn btn--ghost">Se connecter</a>
-                <a href="signup.html" class="btn btn--primary">S'inscrire</a>
+                <a href="/HTML/signin.html" class="btn btn--ghost">Se connecter</a>
+                <a href="/HTML/signup.html" class="btn btn--primary">S'inscrire</a>
             </div>
         </div>
     </nav>
@@ -244,8 +244,8 @@
         <p>Gérez votre application avec un interface claire, intuitive et moderne. Accédez à tous les outils dont vous avez besoin en un seul endroit.</p>
         
         <div class="hero-buttons">
-            <a href="signin.html" class="btn btn--primary">Se connecter</a>
-            <a href="signup.html" class="btn btn--ghost">Créer un compte</a>
+            <a href="/HTML/signin.html" class="btn btn--primary">Se connecter</a>
+            <a href="/HTML/signup.html" class="btn btn--ghost">Créer un compte</a>
         </div>
 
         <!-- Demo Info -->
@@ -329,8 +329,8 @@
         });
 
         // Redirect to dashboard if already logged in
-        if (localStorage.getItem('dashboard-session')) {
-            window.location.href = 'index.html';
+        if (window.auth.isLoggedIn()) {
+            window.auth.redirectToDashboard();
         }
     </script>
 </body>

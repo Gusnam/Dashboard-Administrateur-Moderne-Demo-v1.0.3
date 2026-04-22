@@ -42,25 +42,51 @@ const registerUser = async (req, res) => {
   res.status(400).json({ message: 'Impossible de créer l’utilisateur.' });
 };
 
-const loginUser = async (req, res) => {
-  const { email, password } = req.body;
+const loginUser = async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
 
-  if (!email || !password) {
-    return res.status(400).json({ message: 'Email et mot de passe sont requis.' });
-  }
+    if (!email || !password) {
+      return res.status(400).json({ 
+        success: false,
+        data: null,
+        message: 'Email and password are required.' 
+      });
+    }
 
-  const user = await findUserByEmail(email);
-  if (user && (await bcrypt.compare(password, user.password))) {
+    const user = await findUserByEmail(email);
+    if (!user) {
+      return res.status(401).json({ 
+        success: false,
+        data: null,
+        message: 'Invalid email or password.' 
+      });
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ 
+        success: false,
+        data: null,
+        message: 'Invalid email or password.' 
+      });
+    }
+
     return res.json({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      token: generateToken(user.id),
+      success: true,
+      data: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        token: generateToken(user.id),
+      },
+      message: 'Login successful.'
     });
+  } catch (error) {
+    console.error('Login error:', error);
+    next(error);
   }
-
-  res.status(401).json({ message: 'Email ou mot de passe incorrect.' });
 };
 
 const resetPassword = async (req, res) => {
@@ -89,17 +115,30 @@ const resetPassword = async (req, res) => {
   res.json({ message: 'Le mot de passe a été réinitialisé avec succès.' });
 };
 
-const getCurrentUser = async (req, res) => {
-  if (!req.user) {
-    return res.status(401).json({ message: 'Not authorized.' });
-  }
+const getCurrentUser = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ 
+        success: false,
+        data: null,
+        message: 'Not authorized.' 
+      });
+    }
 
-  res.json({
-    id: req.user.id,
-    name: req.user.name,
-    email: req.user.email,
-    role: req.user.role,
-  });
+    res.json({
+      success: true,
+      data: {
+        id: req.user.id,
+        name: req.user.name,
+        email: req.user.email,
+        role: req.user.role,
+      },
+      message: 'User retrieved successfully.'
+    });
+  } catch (error) {
+    console.error('Get current user error:', error);
+    next(error);
+  }
 };
 
 module.exports = {

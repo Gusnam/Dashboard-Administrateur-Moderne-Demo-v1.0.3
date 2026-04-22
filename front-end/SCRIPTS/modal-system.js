@@ -48,7 +48,7 @@ class ModalManager {
      */
     attachEventListeners() {
         // Close buttons
-        document.querySelectorAll('.modal-close-btn').forEach(btn => {
+        document.querySelectorAll('.modal-close-btn, #modalClose, #modalCancel').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -103,10 +103,9 @@ class ModalManager {
     handleQuickActionClick(button) {
         // Check authentication
         if (button.hasAttribute('data-requires-auth')) {
-            const isAuthenticated = localStorage.getItem('dashboard-session');
-            if (!isAuthenticated) {
+            if (!window.auth?.isLoggedIn?.()) {
                 this.showToast('Veuillez vous connecter pour accéder à cette fonction', 'warning');
-                window.location.href = 'signin.html';
+                window.location.href = '/HTML/signin.html';
                 return;
             }
         }

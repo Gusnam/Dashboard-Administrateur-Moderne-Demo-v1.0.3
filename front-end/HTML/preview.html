@@ -6,16 +6,9 @@
     <title>Preview - AdminDash Dashboard</title>
     <link rel="stylesheet" href="../CSS/style.css" />
     <link rel="stylesheet" href="../CSS/components.css" />
+    <script src="../SCRIPTS/auth.js"></script>
+    <script src="../SCRIPTS/page-protection.js"></script>
     <script>
-        // Check authentication - redirect if authenticated
-        function checkAuthentication() {
-            const isAuthenticated = localStorage.getItem('dashboard-session');
-            if (isAuthenticated) {
-                window.location.href = 'index.html';
-                return;
-            }
-        }
-        
         // Initialize preview mode BEFORE page renders
         function initializePreviewMode() {
             document.documentElement.setAttribute('data-preview-mode', 'true');
@@ -41,9 +34,8 @@
                 localStorage.setItem('dashboard-dark-mode', 'false');
             }
         }
-        
+
         // Execute initialization
-        checkAuthentication();
         initializePreviewMode();
         initializeTheme();
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', initializeTheme);
@@ -68,31 +60,31 @@
             </div>
             
             <nav class="sidebar__nav" aria-label="Navigation principale">
-                <a href="preview.html" class="sidebar__link sidebar__link--active" data-label="Tableau de bord" data-shortcut="G">
+                <a href="/HTML/preview.html" class="sidebar__link sidebar__link--active" data-label="Tableau de bord" data-shortcut="G">
                     <svg class="sidebar__icon-svg" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
                         <path d="M2 4a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V4zm4.5 6a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm2-2.5a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
                     </svg>
                     <span class="sidebar__label">Tableau de bord</span>
                 </a>
-                <a href="signin.html" class="sidebar__link" data-label="Utilisateurs" data-shortcut="U">
+                <a href="/HTML/signin.html" class="sidebar__link" data-label="Utilisateurs" data-shortcut="U">
                     <svg class="sidebar__icon-svg" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
                         <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"/>
                     </svg>
                     <span class="sidebar__label">Utilisateurs</span>
                 </a>
-                <a href="signin.html" class="sidebar__link" data-label="Statistiques">
+                <a href="/HTML/signin.html" class="sidebar__link" data-label="Statistiques">
                     <svg class="sidebar__icon-svg" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
                         <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
                     </svg>
                     <span class="sidebar__label">Statistiques</span>
                 </a>
-                <a href="signin.html" class="sidebar__link" data-label="Transactions">
+                <a href="/HTML/signin.html" class="sidebar__link" data-label="Transactions">
                     <svg class="sidebar__icon-svg" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
                         <path d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4z"/>
                     </svg>
                     <span class="sidebar__label">Transactions</span>
                 </a>
-                <a href="signin.html" class="sidebar__link" data-label="Paramètres" data-shortcut="S">
+                <a href="/HTML/signin.html" class="sidebar__link" data-label="Paramètres" data-shortcut="S">
                     <svg class="sidebar__icon-svg" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
                         <path d="M10.894 2.553a1 1 0 00-1.788 0l-.894 3.776a1 1 0 01-.949.749H3.645a1 1 0 00-.592 1.82l3.102 2.253a1 1 0 01-.364 1.657L2.163 13.97a1 1 0 001.286 1.471l3.102-2.254a1 1 0 011.658.364l.894 3.776a1 1 0 001.788 0l.894-3.776a1 1 0 01.658-1.657l3.102 2.253a1 1 0 001.286-1.47l-3.102-2.254a1 1 0 01-.364-1.657l3.102-2.253a1 1 0 00-.592-1.82h-3.996a1 1 0 01-.949-.749l-.894-3.776z"/>
                     </svg>
@@ -159,8 +151,8 @@
 
                     <!-- Glass Morph Auth Buttons -->
                     <div class="auth-buttons-container" style="display: flex; gap: 10px;">
-                        <a href="signin.html" style="padding: 10px 18px; background: none; border: 1px solid #667eea; color: #667eea; border-radius: 8px; font-weight: 600; text-decoration: none; font-size: 13px; transition: all 0.2s; display: inline-block; cursor: pointer;" onMouseOver="this.style.background='rgba(102, 126, 234, 0.1)'" onMouseOut="this.style.background='none'">Sign In</a>
-                        <a href="signup.html" style="padding: 10px 18px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-weight: 600; text-decoration: none; font-size: 13px; transition: all 0.2s; display: inline-block; cursor: pointer; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);" onMouseOver="this.style.boxShadow='0 4px 16px rgba(102, 126, 234, 0.4)'" onMouseOut="this.style.boxShadow='0 2px 8px rgba(102, 126, 234, 0.3)'">Sign Up</a>
+                        <a href="/HTML/signin.html" style="padding: 10px 18px; background: none; border: 1px solid #667eea; color: #667eea; border-radius: 8px; font-weight: 600; text-decoration: none; font-size: 13px; transition: all 0.2s; display: inline-block; cursor: pointer;" onMouseOver="this.style.background='rgba(102, 126, 234, 0.1)'" onMouseOut="this.style.background='none'">Sign In</a>
+                        <a href="/HTML/signup.html" style="padding: 10px 18px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-weight: 600; text-decoration: none; font-size: 13px; transition: all 0.2s; display: inline-block; cursor: pointer; box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);" onMouseOver="this.style.boxShadow='0 4px 16px rgba(102, 126, 234, 0.4)'" onMouseOut="this.style.boxShadow='0 2px 8px rgba(102, 126, 234, 0.3)'">Sign Up</a>
                     </div>
                 </div>
             </header>
@@ -172,8 +164,8 @@
                     <h2 style="font-size: 32px; font-weight: 700; margin: 0 0 12px 0; letter-spacing: -0.5px;">Experience AdminDash</h2>
                     <p style="font-size: 18px; margin: 0 0 32px 0; opacity: 0.95; max-width: 500px; margin-left: auto; margin-right: auto;">Get full control of your analytics and user management with our powerful admin dashboard.</p>
                     <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
-                        <a href="signin.html" style="background: white; color: #667eea; padding: 14px 32px; border-radius: 8px; font-weight: 600; text-decoration: none; font-size: 16px; border: 2px solid transparent; transition: all 0.2s; display: inline-block; min-width: 140px;">Sign In</a>
-                        <a href="signup.html" style="background: rgba(255, 255, 255, 0.2); color: white; padding: 14px 32px; border-radius: 8px; font-weight: 600; text-decoration: none; font-size: 16px; border: 2px solid white; transition: all 0.2s; display: inline-block; min-width: 140px;">Sign Up</a>
+                        <a href="/HTML/signin.html" style="background: white; color: #667eea; padding: 14px 32px; border-radius: 8px; font-weight: 600; text-decoration: none; font-size: 16px; border: 2px solid transparent; transition: all 0.2s; display: inline-block; min-width: 140px;">Sign In</a>
+                        <a href="/HTML/signup.html" style="background: rgba(255, 255, 255, 0.2); color: white; padding: 14px 32px; border-radius: 8px; font-weight: 600; text-decoration: none; font-size: 16px; border: 2px solid white; transition: all 0.2s; display: inline-block; min-width: 140px;">Sign Up</a>
                     </div>
                 </section>
 
@@ -242,7 +234,7 @@
                 <div class="card" style="border-radius: 12px; border: 1px solid #e9ecef; padding: 32px; background: white; margin-bottom: 40px;">
                     <div class="card__header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
                         <h2 style="font-size: 20px; font-weight: 700; margin: 0; color: #212529;">Recent Users</h2>
-                        <a href="#" style="color: #667eea; text-decoration: none; font-weight: 600; font-size: 14px;">View All →</a>
+                        <a href="/HTML/signin.html" style="color: #667eea; text-decoration: none; font-weight: 600; font-size: 14px;">View All →</a>
                     </div>
                     <div class="table-container">
                         <table class="table" style="width: 100%; border-collapse: collapse;">
@@ -294,8 +286,8 @@
                     <h2 style="font-size: 28px; font-weight: 700; margin: 0 0 12px 0; color: #212529;">Ready to Get Started?</h2>
                     <p style="font-size: 16px; color: #6c757d; margin: 0 0 32px 0; max-width: 500px; margin-left: auto; margin-right: auto;">Join thousands of businesses using AdminDash to manage their operations efficiently.</p>
                     <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
-                        <a href="signup.html" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 32px; border-radius: 8px; font-weight: 600; text-decoration: none; font-size: 16px; border: 2px solid transparent; transition: all 0.2s; display: inline-block; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);">Create Your Account</a>
-                        <a href="signin.html" style="background: white; color: #667eea; padding: 14px 32px; border-radius: 8px; font-weight: 600; text-decoration: none; font-size: 16px; border: 2px solid #667eea; transition: all 0.2s; display: inline-block;">Sign In</a>
+                        <a href="/HTML/signup.html" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 32px; border-radius: 8px; font-weight: 600; text-decoration: none; font-size: 16px; border: 2px solid transparent; transition: all 0.2s; display: inline-block; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);">Create Your Account</a>
+                        <a href="/HTML/signin.html" style="background: white; color: #667eea; padding: 14px 32px; border-radius: 8px; font-weight: 600; text-decoration: none; font-size: 16px; border: 2px solid #667eea; transition: all 0.2s; display: inline-block;">Sign In</a>
                     </div>
                 </div>
             </div>
