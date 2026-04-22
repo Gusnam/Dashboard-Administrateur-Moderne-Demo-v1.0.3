@@ -4,6 +4,8 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const statsRoutes = require('./routes/statsRoutes');
 const transactionRoutes = require('./routes/transactionRoutes');
+const { getAllUsers, createNewUser } = require('./controllers/userController');
+const { protect } = require('./middleware/authMiddleware');
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 const { initializeDatabase } = require('./config/initDb');
 const { checkDBConnection } = require('./config/db');
@@ -37,6 +39,8 @@ app.get('/', (req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.get('/api/users', protect, getAllUsers);
+app.post('/api/users', protect, createNewUser);
 app.use('/api/users', userRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/transactions', transactionRoutes);

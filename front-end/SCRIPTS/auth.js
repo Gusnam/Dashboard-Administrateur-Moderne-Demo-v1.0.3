@@ -130,7 +130,10 @@ async function apiRequest(path, options = {}) {
 
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
-        throw new Error(data.message || 'Une erreur est survenue.');
+        const error = new Error(data.message || 'Une erreur est survenue.');
+        error.status = response.status;
+        error.data = data;
+        throw error;
     }
     return data;
 }
@@ -181,11 +184,28 @@ async function fetchUsers() {
 }
 
 async function createUser(user) {
-    const res = await apiRequest('/api/users', {
-        method: 'POST',
-        authenticated: true,
-        body: user,
-    });
+    let res;
+    try {
+        res = await apiRequest('/api/users', {
+            method: 'POST',
+            authenticated: true,
+            body: user,
+        });
+    } catch (error) {
+        if (error.status !== 404 && !String(error.message || '').includes('/api/users')) {
+            throw error;
+        }
+
+        // Compatibility fallback for older demo backend builds that only expose register.
+        res = await apiRequest('/api/auth/register', {
+            method: 'POST',
+            body: {
+                name: user.name,
+                email: user.email,
+                password: user.password || 'Demo1234',
+            },
+        });
+    }
     return res?.data ?? res;
 }
 
